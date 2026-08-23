@@ -1,0 +1,41 @@
+name: Targeted choice scorer validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  targeted:
+    runs-on: ubuntu-24.04
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION: 0.3.261.dev0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: 0.9.4
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install ".[dev]"
+
+      - name: Run choice scorer tests
+        run: uv run pytest tests/scorer/test_choice.py -q
+
+      - name: Run Ruff
+        run: |
+          uv run ruff check src/inspect_ai/scorer/_choice.py tests/scorer/test_choice.py
+          uv run ruff format --check src/inspect_ai/scorer/_choice.py tests/scorer/test_choice.py
+
+      - name: Run mypy
+        run: uv run mypy src/inspect_ai/scorer/_choice.py
