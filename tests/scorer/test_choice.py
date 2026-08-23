@@ -164,3 +164,35 @@ async def test_correct_multiple_answers_all_incorrect():
     assert result.text == CORRECT
     assert result.answer == ""
     assert result.explanation == "ANSWERS: "
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("target", "correct_index"), [("9", 34), ("10", 35)])
+async def test_score_numeric_choice_label(target: str, correct_index: int):
+    scorer = choice()
+    state = simple_task_state(
+        model_output=f"ANSWER: {target}",
+        choices=[f"choice {i}" for i in range(correct_index + 1)],
+    )
+    for index in range(correct_index + 1):
+        state.choices.mark_choice(index, index == correct_index)
+
+    result = await scorer(state, Target(target))
+    assert result.text == CORRECT
+    assert result.answer == target
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("target", [["9", "10"], "9,10", "9, 10"])
+async def test_score_multiple_numeric_choice_labels(target: str | list[str]):
+    scorer = choice()
+    state = simple_task_state(
+        model_output="ANSWER: 9, 10",
+        choices=[f"choice {i}" for i in range(36)],
+    )
+    for index in range(36):
+        state.choices.mark_choice(index, index in (34, 35))
+
+    result = await scorer(state, Target(target))
+    assert result.text == CORRECT
+    assert result.answer == "9, 10"

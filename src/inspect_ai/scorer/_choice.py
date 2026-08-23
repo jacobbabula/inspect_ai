@@ -15,13 +15,33 @@ def _choices_are_shuffled(choices: Choices) -> bool:
     return any(i != choice.original_position for i, choice in enumerate(choices))
 
 
+def _target_answers(target: Target) -> list[str]:
+    target_answers: list[str] = []
+
+    for target_value in target:
+        numeric_answer: list[str] = []
+
+        for target_character in target_value:
+            if target_character.isnumeric():
+                numeric_answer.append(target_character)
+                continue
+
+            if numeric_answer:
+                target_answers.append("".join(numeric_answer))
+                numeric_answer.clear()
+
+            if target_character not in (",", " "):
+                target_answers.append(target_character)
+
+        if numeric_answer:
+            target_answers.append("".join(numeric_answer))
+
+    return target_answers
+
+
 def _score_target(target: Target, choices: Choices) -> tuple[list[int], list[str]]:
-    # Filter out separator characters (e.g. "A,B" or "A, B") so that only
-    # actual answer letters/digits are mapped to choice indices.
     target_positions = [
-        answer_index(target_character)
-        for target_character in target.text
-        if target_character not in (",", " ")
+        answer_index(target_answer) for target_answer in _target_answers(target)
     ]
 
     choice_positions = [i for i, choice in enumerate(choices) if choice.correct is True]
